@@ -70,10 +70,14 @@ public class RnsResources {
 	)
     @ApiResponses(value = {
     		@ApiResponse(code = 200, message = "OK"),
+    		@ApiResponse(code = 404, message = "Not Found"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public Vehicle getVehicle(	) {
-		return null;
+	public Vehicle getVehicle(@PathParam("id") String plateId) {
+		Vehicle vehicle = service.getVehicle(uriInfo,plateId);
+		if (vehicle==null)
+			throw new NotFoundException();
+		return vehicle;
 	}
 	
 	@PUT
@@ -81,12 +85,16 @@ public class RnsResources {
     @ApiOperation(value = "putVehicle", notes = "Enter a vehicle in the system"
 	)
     @ApiResponses(value = {
-    		@ApiResponse(code = 200, message = "OK"),
+    		@ApiResponse(code = 201, message = "Created"),
     		})
 	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public Response putVehicle(	) {
-		return null;
+	public SuggestedPath putVehicle(@PathParam("id") String id, Vehicle vehicle) {
+		SuggestedPath suggestedPath = service.tryEnterVehicle(uriInfo, vehicle);
+		//if (suggestedPath != null){
+			return suggestedPath;
+		//}
+		//return null;
 	}
 	
 	@GET
@@ -98,8 +106,12 @@ public class RnsResources {
     		@ApiResponse(code = 404, message = "Not Found"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public State getState() {
-		return null;
+	public State getState(@PathParam("id") String plateId) {
+		State state = new State();
+		state = service.getVehicleState(uriInfo, plateId);
+		if (state == null)
+			throw new NotFoundException(); // vehicle not found
+		return state;
 	}
 	
 	@PUT
@@ -123,10 +135,16 @@ public class RnsResources {
 	)
     @ApiResponses(value = {
     		@ApiResponse(code = 200, message = "OK"),
+    		@ApiResponse(code = 404, message = "Not Found"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public SuggestedPath getSuggestedPath() {
-		return null;
+	public SuggestedPath getSuggestedPath(@PathParam("id") String plateId) {
+		SuggestedPath sp = new SuggestedPath();
+		sp = service.getSuggestedPath(uriInfo,plateId);
+		if (sp == null){
+			throw new NotFoundException(); //vehicle not found
+		}
+		return sp;
 	}
 
 	@GET
@@ -138,8 +156,13 @@ public class RnsResources {
     		@ApiResponse(code = 404, message = "Not found"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public Position getCurrentPosition() {
-		return null;
+	public Position getCurrentPosition(@PathParam("id") String plateId) {
+		Position p = new Position();
+		p = service.getVehicleCurrentPosition(uriInfo,plateId);
+		if (p == null){
+			throw new NotFoundException(); //vehicle not found
+		}
+		return p;
 	}
 	
 	@PUT

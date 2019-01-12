@@ -20,6 +20,7 @@ public class RnsDB {
 
 	private ConcurrentHashMap<String,Place> placeById; 
 	private ConcurrentHashMap<String,Vehicle> vehicleById;
+	private ConcurrentHashMap<String,SuggestedPath> suggestedPathByVehicle;
 	//private ConcurrentHashMap<String,Place> vehiclesByPlace;
 	private Set<Connection> connections;
 	private List<String> gatesId,roadSegmentsId,parkingAreasId;
@@ -27,6 +28,7 @@ public class RnsDB {
 	private RnsDB() {
 		placeById = new ConcurrentHashMap<String,Place>();
 		vehicleById = new ConcurrentHashMap<String,Vehicle>();
+		suggestedPathByVehicle = new  ConcurrentHashMap<String,SuggestedPath>();
 		connections = new HashSet<Connection>();
 		gatesId = new ArrayList<String>();
 		roadSegmentsId = new ArrayList<String>();
@@ -85,6 +87,27 @@ public class RnsDB {
 		//}
 	}
 	
+	public boolean addVehicle(Vehicle vehicle){
+		String plateId = vehicle.getPlateId();
+		if (vehicleById.contains(plateId))
+			return false;
+		vehicleById.put(plateId, vehicle);			
+		return true;
+	}
+	
+	public boolean setSuggestedPath(String plateId,SuggestedPath sp){
+		if (vehicleById.contains(plateId)){
+			suggestedPathByVehicle.put(plateId, sp);
+			return true;
+		}
+		return false;
+	}
+	
+	
+	public boolean updateSuggestedPath(String plateId,SuggestedPath sp){
+		return true;
+	}
+	
 	
 	/*------ END INIT FUNCTIONS ------*/
 	
@@ -100,6 +123,14 @@ public class RnsDB {
 			return null;
 		}
 		return vehicleById.values();
+	}
+	
+	public Vehicle getVehicle(String plateId){
+		Vehicle vehicle = vehicleById.get(plateId);
+		if (vehicle==null)
+			return null;
+		else
+			return vehicle;
 	}
 	
 	public Collection<Place> getGates(){
@@ -155,6 +186,27 @@ public class RnsDB {
 		}
 		return tmpConnections;
 	}
+	
+	public SuggestedPath getSuggestedPathByPlateId(String plateId){
+		if (suggestedPathByVehicle.contains(plateId)){
+			return suggestedPathByVehicle.get(plateId);
+		}else{
+			if (vehicleById.contains(plateId)){
+				// there is not suggested path return a empty sugg path
+				Vehicle v = vehicleById.get(plateId);
+				SuggestedPath sp = new SuggestedPath();
+				sp.setStartId(v.getPosition().getPlaceId());
+				sp.setEndId(v.getDestination());
+				//path is null
+				return sp;
+			}else{
+				//vehicle not found
+				return null;
+			}
+		}
+	}
+	
+	
 	
 	
 	

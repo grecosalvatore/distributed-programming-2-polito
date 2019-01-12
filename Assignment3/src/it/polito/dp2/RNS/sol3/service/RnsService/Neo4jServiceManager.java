@@ -2,7 +2,13 @@ package it.polito.dp2.RNS.sol3.service.RnsService;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.client.Client;
@@ -43,6 +49,9 @@ public class Neo4jServiceManager {
 	private javax.xml.validation.Validator validator;
 	private Neo4jDB neo4jDB = Neo4jDB.getNeo4jDB();
 	
+	 private static Logger logger = Logger.getLogger(Neo4jServiceManager.class.getName());
+
+	
 	private Neo4jServiceManager ()  {
 		this.client = ClientBuilder.newClient();
 		if (serviceBaseUri == null)
@@ -72,6 +81,15 @@ public class Neo4jServiceManager {
 	
 	public static Neo4jServiceManager getNeo4jServiceManager() {
 		return neo4jServiceManager;
+	}
+	
+	public List<String> findShortestPath(String origin,String destination){
+		List<String> path = sendShortestPathsRequest(origin,destination,0);
+		/*if (path == null)
+			return null;
+		if (path.isEmpty())
+			return null;*/
+		return path;
 	}
 	
 	public void initPlaces(Set<PlaceReader> places){
@@ -204,6 +222,79 @@ public class Neo4jServiceManager {
 		//System.out.println("relationship: from: "+responseRelationship.getStart()+" to : "+responseRelationship.getEnd()+"\n");
 		return responseRelationship;
 	}
+	
+	private List<String> sendShortestPathsRequest(String source, String destination, int maxlength) {
+		int max_depth;
+		it.polito.dp2.RNS.sol3.jaxb.neo4j.ObjectFactory of;
+		Node sourceNode = neo4jDB.getNodeByPlaceId(source);
+		System.out.println("send short path req");
+		if (sourceNode != null){
+			Node destinationNode = neo4jDB.getNodeByPlaceId(destination);
+			if (destinationNode != null){
+				
+				
+				ShortestPathsRequest requestShortPaths = new ShortestPathsRequest();		
+				if (maxlength<=0)
+					max_depth = Integer.MAX_VALUE;
+				else
+					max_depth = maxlength;
+				requestShortPaths.setMaxDepth(BigInteger.valueOf(max_depth));
+				requestShortPaths.setAlgorithm("shortestPath");
+				requestShortPaths.setTo(destinationNode.getSelf());
+				of = new ObjectFactory();
+				ShortestPathsRequest.Relationships rel = of.createShortestPathsRequestRelationships();
+				rel.setDirection("out");
+				rel.setType("ConnectedTo");
+				requestShortPaths.setRelationships(rel);
+				//if (nodeValidation(requestShortPaths)){
+					String targetUri = sourceNode.getSelf();
+					
+					// build the web target
+					WebTarget target = client.target(UriBuilder.fromUri(targetUri+"/paths"));
+					
+					Response response = target
+							   .request()
+							   .accept(MediaType.APPLICATION_JSON)
+							   .post(Entity.json(requestShortPaths));
+					if (response.getStatus()!=200) {
+						
+						System.out.println("Error in remote operation: "+response.getStatus()+" "+response.getStatusInfo());
+					}
+					
+					List<ShortPath> shortestPaths = response.readEntity(new GenericType<List<ShortPath>>() {});
+					logger.log(Level.INFO, "PATH:\n");
+					//iterate all paths
+					System.out.println("PATH : \n");
+					for (ShortPath paths :shortestPaths){
+						//if (nodeValidation(paths)==true){
+							List<String> pathUrl = paths.getNodes();
+							List<String> pathID = new ArrayList<String>();
+							for (String nodeUrl : pathUrl){
+								String placeId = neo4jDB.getPlaceIdByURL(nodeUrl);
+								pathID.add(placeId);
+								logger.log(Level.INFO, " " + placeId + " ");
+								System.out.println(" " + placeId + " ");
+							}
+							return pathID;
+						//}else{
+							//error in the validation of the response
+							//System.out.println("Error in the validation of short path response\n");
+						//}
+					}
+					//no path returned
+					return null;
+				//}
+			}else{
+				//error destination node is not in the local db
+				//throw new UnknownIdException();
+			}
+		}else{
+			//error source node in not in the local db
+			//throw  new UnknownIdException();
+		}
+		return null;
+	}
+	
 	
 	
 	
