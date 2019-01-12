@@ -36,6 +36,7 @@
 				<xsd:element name="destination" type="xsd:string" minOccurs="1"/>
 				<xsd:element name="destinationLink" type="xsd:anyURI" minOccurs="0"/>
 				<xsd:element ref="position" minOccurs="0"/>
+				<xsd:element name="suggestedPathLink" type="xsd:anyURI" minOccurs="0"/>
 			</xsd:sequence>
 		</xsd:complexType>
 	</xsd:element>
@@ -45,7 +46,7 @@
 		<xsd:complexType>
 			<xsd:sequence>
 				<xsd:element name="self" type="xsd:anyURI" minOccurs="0"/>
-				<xsd:element name="place" type="xsd:anyURI" minOccurs="0" />
+				<xsd:element name="placeLink" type="xsd:anyURI" minOccurs="0" />
 				<xsd:element name="placeId" type="xsd:string" minOccurs="1" maxOccurs="1"/>
 			</xsd:sequence>
 		</xsd:complexType>
@@ -61,7 +62,14 @@
 				<xsd:element name="end" type="xsd:anyURI" minOccurs="0" />
 				<xsd:element name="endId" type="xsd:string" minOccurs="1" />
 				<xsd:element name="next" type="xsd:anyURI" minOccurs="0" />
-				<xsd:element name="placeId" minOccurs="1" maxOccurs="unbounded"/>
+				<xsd:element name="path" minOccurs="1" maxOccurs="unbounded">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="palceId" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+							<xsd:element name="placeLink" type="xsd:anyURI" minOccurs="1" maxOccurs="1"/>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
 			</xsd:sequence>
 		</xsd:complexType>
 	</xsd:element>
@@ -70,7 +78,7 @@
 		<xsd:complexType >
 			<xsd:sequence>
 				<xsd:element name="self" type="xsd:anyURI" minOccurs="0"/>
-				<xsd:element name="state" minOccurs="1" maxOccurs="1">
+				<xsd:element name="VehicleState" minOccurs="1" maxOccurs="1">
 					<xsd:simpleType>
 	     					<xsd:restriction base="xsd:string">
 	   							<xsd:enumeration value="PARKED"/>
