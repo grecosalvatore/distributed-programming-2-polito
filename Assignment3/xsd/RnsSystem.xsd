@@ -30,7 +30,7 @@
 				<xsd:element name="self" type="xsd:anyURI" minOccurs="0"/>
 				<xsd:element name="plateId" type="xsd:string" minOccurs="1" maxOccurs="1"/>
 			    <xsd:element ref="state"  minOccurs="0"/>
-			    <xsd:element name="type" type="vehicleType" minOccurs="1" maxOccurs="1"/>	
+			    <xsd:element ref="vehicleType" minOccurs="1" maxOccurs="1"/>	
 				<xsd:element name="origin" type="xsd:string" minOccurs="1"/>
 				<xsd:element name="originLink" type="xsd:anyURI" minOccurs="0"/>
 				<xsd:element name="destination" type="xsd:string" minOccurs="1"/>
@@ -90,16 +90,16 @@
 	    </xsd:complexType>
 	</xsd:element>
 
-
-	<xsd:simpleType name="vehicleType">
-     		<xsd:restriction base="xsd:string">
-   				<xsd:enumeration value="CAR"/>
-    			<xsd:enumeration value="TRUCK"/>
-    			<xsd:enumeration value="CARAVAN"/>
-				<xsd:enumeration value="SHUTTLE"/>
-    		</xsd:restriction>
-	</xsd:simpleType>
-	
+	<xsd:element name="vehicleType">
+		<xsd:simpleType >
+	     		<xsd:restriction base="xsd:string">
+	   				<xsd:enumeration value="CAR"/>
+	    			<xsd:enumeration value="TRUCK"/>
+	    			<xsd:enumeration value="CARAVAN"/>
+					<xsd:enumeration value="SHUTTLE"/>
+	    		</xsd:restriction>
+		</xsd:simpleType>
+	</xsd:element>
 	
 	<xsd:element name="places">
 		<xsd:complexType>
@@ -151,9 +151,9 @@
 				<xsd:element name="capacity" type="xsd:integer"/>
 				<xsd:element ref="connectedTo" minOccurs="0" maxOccurs="1"/>	
 			    <xsd:choice>
-					<xsd:element name="roadSegment" type="roadSegmentType"/>		
-					<xsd:element name="parkingArea" type="parkingAreaType"/>
-					<xsd:element name="gate" type="gateType"/>
+					<xsd:element ref="roadSegment" />		
+					<xsd:element ref="parkingArea" />
+					<xsd:element ref="gate" />
 				</xsd:choice>
 			</xsd:sequence>
 		</xsd:complexType>
@@ -177,29 +177,35 @@
 		</xsd:complexType>
 	</xsd:element>
 
-	<xsd:complexType name="roadSegmentType">
-		<xsd:sequence>	
-			<xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1"/>
-			<xsd:element name="roadName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
-		</xsd:sequence>
-	</xsd:complexType>
+	<xsd:element name="roadSegment">
+		<xsd:complexType >
+			<xsd:sequence>	
+				<xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+				<xsd:element name="roadName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
 
-	<xsd:complexType name="parkingAreaType">
-		<xsd:sequence>	
-			<xsd:element name="service" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
-		</xsd:sequence>
-	</xsd:complexType>
+	<xsd:element name="parkingArea">
+		<xsd:complexType >
+			<xsd:sequence>	
+				<xsd:element name="service" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
 
-	<xsd:simpleType name="gateType">
-     		<xsd:restriction base="xsd:string">
-   				<xsd:enumeration value="in"/>
-    			<xsd:enumeration value="out"/>
-    			<xsd:enumeration value="inout"/>
-				<xsd:enumeration value="IN"/>
-				<xsd:enumeration value="OUT"/>
-				<xsd:enumeration value="INOUT"/>
-    		</xsd:restriction>
-  	</xsd:simpleType>
+	<xsd:element name="gate">
+		<xsd:simpleType >
+	     		<xsd:restriction base="xsd:string">
+	   				<xsd:enumeration value="in"/>
+	    			<xsd:enumeration value="out"/>
+	    			<xsd:enumeration value="inout"/>
+					<xsd:enumeration value="IN"/>
+					<xsd:enumeration value="OUT"/>
+					<xsd:enumeration value="INOUT"/>
+	    		</xsd:restriction>
+	  	</xsd:simpleType>
+  	</xsd:element>
 
 	<xsd:element name="connections">
 		<xsd:complexType>
