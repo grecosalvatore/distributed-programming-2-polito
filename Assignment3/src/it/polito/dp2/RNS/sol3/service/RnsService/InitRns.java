@@ -91,7 +91,7 @@ public class InitRns {
 			place.setCapacity(BigInteger.valueOf(p.getCapacity()));
 			place.setPlaceId(p.getId());
 			
-			ParkingAreaType pat = new ParkingAreaType();
+			ParkingArea pat = new ParkingArea();
 			
 			Set<String> services = p.getServices();
 			for (String service : services){
@@ -127,7 +127,7 @@ public class InitRns {
 			place.setCapacity(BigInteger.valueOf(p.getCapacity()));
 			place.setPlaceId(p.getId());
 			
-			RoadSegmentType rst = new RoadSegmentType();
+			RoadSegment rst = new RoadSegment();
 			rst.setName(p.getName());
 			rst.setRoadName(p.getRoadName());
 			

@@ -2,6 +2,7 @@ package it.polito.dp2.RNS.sol3.service.resources;
 
 
 import it.polito.dp2.RNS.sol3.jaxb.*;
+import it.polito.dp2.RNS.sol3.service.RnsService.RnsDeployer;
 import it.polito.dp2.RNS.sol3.service.RnsService.RnsService;
 
 import java.net.URI;
@@ -37,7 +38,8 @@ public class RnsResources {
 	public UriInfo uriInfo;
 	
 	RnsService service = new RnsService();
-
+	RnsDeployer rnsDeployer = new RnsDeployer();
+	
 	public RnsResources(@Context UriInfo uriInfo) {
 		this.uriInfo = uriInfo;
 	}
@@ -91,10 +93,10 @@ public class RnsResources {
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	public SuggestedPath putVehicle(@PathParam("id") String id, Vehicle vehicle) {
 		SuggestedPath suggestedPath = service.tryEnterVehicle(uriInfo, vehicle);
-		//if (suggestedPath != null){
+		if (suggestedPath != null){
 			return suggestedPath;
-		//}
-		//return null;
+		}
+		return null;
 	}
 	
 	@GET
@@ -125,8 +127,8 @@ public class RnsResources {
     		})
 	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public void changeState() {
-		return ;
+	public State changeState(@PathParam("id") String id, State newState) {
+		return service.changeVehicleState(uriInfo, id, newState);
 	}
 
 	@GET
@@ -177,8 +179,8 @@ public class RnsResources {
     		})
 	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public SuggestedPath changeCurrentPosition() {
-		return null;
+	public SuggestedPath changeCurrentPosition(@PathParam("id") String plateId, Position newPosition) {
+		return service.changeCurrentPosition(uriInfo, plateId, newPosition);
 	}
 
 	@GET
@@ -219,8 +221,8 @@ public class RnsResources {
     		})
 	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public Place getCurrentVehicles() {
-		return null;
+	public Vehicles getCurrentVehicles(@PathParam("id") String placeId) {
+		return service.getCurrentVehiclesByPlaceId(uriInfo, placeId);
 	}
 	
 	@GET

@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 import it.polito.dp2.RNS.ConnectionReader;
 import it.polito.dp2.RNS.sol3.jaxb.*;
+import it.polito.dp2.RNS.sol3.jaxb.SuggestedPath.Path;
 
 
 
@@ -89,14 +90,17 @@ public class RnsDB {
 	
 	public boolean addVehicle(Vehicle vehicle){
 		String plateId = vehicle.getPlateId();
-		if (vehicleById.contains(plateId))
+		if (vehicleById.contains(plateId)){
 			return false;
+		}
+	
+		System.out.println("added vehicle :" + plateId);
 		vehicleById.put(plateId, vehicle);			
 		return true;
 	}
 	
 	public boolean setSuggestedPath(String plateId,SuggestedPath sp){
-		if (vehicleById.contains(plateId)){
+		if (vehicleById.containsKey(plateId)==true){
 			suggestedPathByVehicle.put(plateId, sp);
 			return true;
 		}
@@ -177,6 +181,18 @@ public class RnsDB {
 			return place;
 	}
 	
+	public Collection<Vehicle> getCurrentVehiclesByPlaceId(String placeId){
+		if (vehicleById.isEmpty())
+			return null;
+		Set<Vehicle> vehicles = new HashSet<Vehicle>();
+		for (Vehicle v : vehicleById.values()){
+			String p = v.getPosition().getPlaceId();
+			if (p.equals(placeId))
+				vehicles.add(v);
+		}
+		return vehicles;
+	}
+	
 	public Collection<Connection> getConnections(){
 		if (connections.isEmpty())
 			return null;
@@ -188,10 +204,10 @@ public class RnsDB {
 	}
 	
 	public SuggestedPath getSuggestedPathByPlateId(String plateId){
-		if (suggestedPathByVehicle.contains(plateId)){
+		if (suggestedPathByVehicle.containsKey(plateId)){
 			return suggestedPathByVehicle.get(plateId);
 		}else{
-			if (vehicleById.contains(plateId)){
+			if (vehicleById.containsKey(plateId)){
 				// there is not suggested path return a empty sugg path
 				Vehicle v = vehicleById.get(plateId);
 				SuggestedPath sp = new SuggestedPath();
@@ -205,6 +221,41 @@ public class RnsDB {
 			}
 		}
 	}
+	
+	public boolean changeState(String plateId,State newState){
+		Vehicle oldVehicle = vehicleById.get(plateId);
+		if (oldVehicle!=null){
+			Vehicle newVehicle = oldVehicle;
+			newVehicle.setState(newState);
+			return vehicleById.replace(plateId, oldVehicle, newVehicle);
+		}else
+			return false;
+	}
+	
+	public boolean changePositionWithoutSuggestedPath(String plateId,Position newPosition){
+		Vehicle oldVehicle = vehicleById.get(plateId);
+		if (oldVehicle!=null){
+			Vehicle newVehicle = oldVehicle;
+			newVehicle.setPosition(newPosition);
+			return vehicleById.replace(plateId, oldVehicle, newVehicle);
+		}else
+			return false;
+	}
+	
+	public boolean changePositionWithSuggestedPath(SuggestedPath newSp,String plateId,Position newPosition){
+		Vehicle oldVehicle = vehicleById.get(plateId);
+		if (oldVehicle!=null){
+			Vehicle newVehicle = oldVehicle;
+			newVehicle.setPosition(newPosition);
+			if (vehicleById.replace(plateId, oldVehicle, newVehicle)==true){
+				suggestedPathByVehicle.replace(plateId, newSp);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
 	
 	
 	
