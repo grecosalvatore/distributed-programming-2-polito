@@ -3,6 +3,8 @@ package it.polito.dp2.RNS.sol3.service.RnsService;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.ws.rs.InternalServerErrorException;
 
@@ -21,7 +23,7 @@ import it.polito.dp2.RNS.sol3.service.db.RnsDB;
 
 public class InitRns {
 	private static InitRns initDB = new InitRns();
-	
+	private static Logger logger ;
 	
 	private RnsReader monitor;
 	private RnsDB db = RnsDB.getRnsDB();
@@ -36,9 +38,12 @@ public class InitRns {
 			System.err.println("Error during initialization of the DB");
 			throw new InternalServerErrorException();
 		}
+		logger = Logger.getLogger(InitRns.class.getName());
 		initPlace();
+		logger.log(Level.INFO, "Initialization of Neo4j DB...");
 		neo4jService.initPlaces(monitor.getPlaces(null));
 		neo4jService.initConnections(monitor.getConnections());
+		logger.log(Level.INFO, "Neo4j DB succesfully initialized");
 	}
 	
 	public static InitRns getInitRns() {
@@ -46,11 +51,17 @@ public class InitRns {
 	}
 	
 	private void initPlace(){
-		
+		logger.log(Level.INFO, "Initialization of Places...");
 		initGates();
+		logger.log(Level.INFO, "Gates initialized");
 		initParkingAreas();
+		logger.log(Level.INFO, "Parking Areas initialized");
 		initRoadSegments();
+		logger.log(Level.INFO, "Road Segments initialized");
+		logger.log(Level.INFO, "Places succesfully initialized");
+		logger.log(Level.INFO, "Initialization of Connections...");
 		initConnections();
+		logger.log(Level.INFO, "Connections succesfully initialized");
 		return;
 			
 	}

@@ -2,6 +2,7 @@ package it.polito.dp2.RNS.sol3.service.RnsService;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,6 +23,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.util.JAXBSource;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 
@@ -58,24 +60,36 @@ public class Neo4jServiceManager {
 			serviceBaseUri = "http://localhost:7474/db";
 		
 		// create validator that uses the DataTypes schema
-    	/*SchemaFactory sf = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI);
+    	SchemaFactory sf = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI);
     	Schema schema;
 		try {
-			//schema = sf.newSchema(new File("xsd/Neo4jXML.xsd"));
-			schema = sf.newSchema(new File("xsd/RnsSystem.xsd"));
+			//schema = sf.newSchema(new File("/xsd/Neo4jXML.xsd"));
+			//schema = sf.newSchema(new File("xsd/RnsSystem.xsd"));
 			
+			
+			InputStream schemaStream = Neo4jServiceManager.class.getResourceAsStream("/xsd/Neo4jXML.xsd");
+            if (schemaStream == null) {
+                logger.log(Level.SEVERE, "xml schema file Not found.");
+                try {
+					throw new IOException();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+            }
+            schema = sf.newSchema(new StreamSource(schemaStream));
 			validator = schema.newValidator();
 	    	//validator.setErrorHandler(new MyErrorHandler());
 	    	
 			// create JAXB context related to the classed generated from the DataTypes schema
-	        jc = JAXBContext.newInstance("it.polito.dp2.RNS.sol3.service");
+	        jc = JAXBContext.newInstance("it.polito.dp2.RNS.sol3.jaxb.neo4j");
 		} catch (SAXException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (JAXBException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}*/
+		}
     	
 	}
 	
@@ -98,22 +112,22 @@ public class Neo4jServiceManager {
 			CreateNodeType node = new CreateNodeType();
 			node.setId(placeId);
 			//validate the node against schema
-			//if (nodeValidation(node) == true){
+			if (nodeValidation(node) == true){
 				//if no error occurred in the validation send a request to neo4j
 				Node responseNode = sendCreationNodeRequest(node);
 				//validate the response object against schema
-				//if (nodeValidation(responseNode) == true){
-					//save in local DB
-					//this.mapPlaceIDtoNode.put(placeId, responseNode);
-					//save mapping url - placereader
-					//this.mapUrlToPlace.put(responseNode.getSelf(),place);
-				//}		
-				
-				//add the placeId - node tuple to the db
-				if (neo4jDB.addNode(placeId, responseNode)== false){
-					//error: already present in the db
+				if (nodeValidation(responseNode) == true){
+					//add the placeId - node tuple to the db
+					if (neo4jDB.addNode(placeId, responseNode)== false){
+						//error: already present in the db
+					}
+				}else{
+					//error in the validation of response
 				}
-			//}
+				
+			}else{
+				//error in the validation of the request
+			}
 		}
 		return;
 	}
@@ -132,18 +146,19 @@ public class Neo4jServiceManager {
 					relationship.setTo(toUri);	
 					relationship.setType("ConnectedTo");
 					//validate the node against schema
-					//if (nodeValidation(relationship) == true){
+					if (nodeValidation(relationship) == true){
 						//if no error occurred in the validation send a request to neo4j
 						Relationship responseRelationship = sendCreationRelationshipRequest(fromUri,relationship);
-						
 						//validate the response object against schema
-						//if (nodeValidation(responseRelationship) == true){
+						if (nodeValidation(responseRelationship) == true){
 							//save in local DB
-							//mapPlaceIDtoNode.put(placeId, responseNode);
-						//}		
-					//}
-					
-					
+							//success
+						}else{
+							//error in the validation of response
+						}
+					}else{
+						//error in the validation of request
+					}
 				}else{
 					//erro to node is null
 				}
@@ -219,7 +234,6 @@ public class Neo4jServiceManager {
 		}
 		
 		responseRelationship = response.readEntity(Relationship.class);
-		//System.out.println("relationship: from: "+responseRelationship.getStart()+" to : "+responseRelationship.getEnd()+"\n");
 		return responseRelationship;
 	}
 	
@@ -246,7 +260,7 @@ public class Neo4jServiceManager {
 				rel.setDirection("out");
 				rel.setType("ConnectedTo");
 				requestShortPaths.setRelationships(rel);
-				//if (nodeValidation(requestShortPaths)){
+				if (nodeValidation(requestShortPaths)){
 					String targetUri = sourceNode.getSelf();
 					
 					// build the web target
@@ -262,28 +276,28 @@ public class Neo4jServiceManager {
 					}
 					
 					List<ShortPath> shortestPaths = response.readEntity(new GenericType<List<ShortPath>>() {});
-					logger.log(Level.INFO, "PATH:\n");
 					//iterate all paths
 					System.out.println("PATH : \n");
 					for (ShortPath paths :shortestPaths){
-						//if (nodeValidation(paths)==true){
+						if (nodeValidation(paths)==true){
 							List<String> pathUrl = paths.getNodes();
 							List<String> pathID = new ArrayList<String>();
 							for (String nodeUrl : pathUrl){
 								String placeId = neo4jDB.getPlaceIdByURL(nodeUrl);
 								pathID.add(placeId);
-								logger.log(Level.INFO, " " + placeId + " ");
 								System.out.println(" " + placeId + " ");
 							}
 							return pathID;
-						//}else{
+						}else{
 							//error in the validation of the response
 							//System.out.println("Error in the validation of short path response\n");
-						//}
+						}
 					}
 					//no path returned
 					return null;
-				//}
+				}else{
+					//error in the validation of request
+				}
 			}else{
 				//error destination node is not in the local db
 				//throw new UnknownIdException();

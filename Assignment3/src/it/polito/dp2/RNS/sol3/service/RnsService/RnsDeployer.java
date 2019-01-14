@@ -1,5 +1,6 @@
 package it.polito.dp2.RNS.sol3.service.RnsService;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.ws.rs.ext.Provider;
@@ -19,7 +20,9 @@ public class RnsDeployer implements ApplicationEventListener{
 		 switch (applicationEvent.getType()) {
          case INITIALIZATION_START: {
         	 System.out.println("Start initialization of DB");
+        	 logger.log(Level.INFO, "Initialization of DB started");
         	 InitRns initDB = InitRns.getInitRns();
+        	 logger.log(Level.INFO, "DB succesfully initialized");
         	 System.out.println("DB succesfully initialized");
          }
          
