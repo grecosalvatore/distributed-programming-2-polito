@@ -92,11 +92,16 @@ public class RnsResources {
 	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	public SuggestedPath putVehicle(@PathParam("id") String id, Vehicle vehicle) {
-		SuggestedPath suggestedPath = service.tryEnterVehicle(uriInfo, vehicle);
-		if (suggestedPath != null){
-			return suggestedPath;
+		if(id.equals(vehicle.getPlateId())){
+			SuggestedPath suggestedPath = service.tryEnterVehicle(uriInfo, vehicle);
+			if (suggestedPath != null){
+				return suggestedPath;
+			}
+			return null;
+		}else{
+			//plateId != id of resource
+			throw new BadRequestException(); 
 		}
-		return null;
 	}
 	
 	@GET
