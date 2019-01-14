@@ -11,7 +11,7 @@
 		<property name="custom.dir" location="${basedir}/custom" />
 		<property name="xsd.dir" location="${basedir}/xsd" />
 		<property name="doc.dir" location="${basedir}/doc" />
-		
+		<property name="web_content.dir" location="${basedir}/WebContent"/>
 		<property name="debug" value="true" />
 		<property name="debuglevel" value="source,lines,vars" />
 		<property name="target" value="1.8" />
@@ -57,13 +57,16 @@
 			<arg value="${gen.dir}" />
 			<arg value="-p" />
 			<arg value="it.polito.dp2.RNS.sol3.jaxb.neo4j" />
-			<arg value="${xsd.dir}/Neo4JXML.xsd" />
+			<arg value="${xsd.dir}/Neo4jXML.xsd" />
 		</exec>
 	</target>
 
 	<!-- Target build-service -->
 		<target name="build-service" depends="init,generate-artifacts,generate-bindings">
 			<echo>Building service...</echo>
+			<copy file="${xsd.dir}/RnsSystem.xsd" tofile="${web_content.dir}/WEB-INF/classes/xsd/RnsSystem.xsd"/>
+			<copy file="${xsd.dir}/Neo4jXML.xsd" tofile="${web_content.dir}/WEB-INF/classes/xsd/Neo4jXML.xsd"/>
+			<copy file="${custom.dir}/BadRequestBodyTemplate.html" tofile="${web_content.dir}/WEB-INF/classes/html/BadRequestBodyTemplate.html"/>
 			<javac destdir="${build.dir}" debug="${debug}" debuglevel="${debuglevel}" source="${source}" target="${target}" includeantruntime="false">
 				<src path="${src.dir}"/>
 				<src path="${gen.dir}"/>
