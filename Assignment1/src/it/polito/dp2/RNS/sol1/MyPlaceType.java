@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import it.polito.dp2.RNS.PlaceReader;
-import it.rnsinfo.PlaceType;
+import it.polito.dp2.RNS.sol1.jaxb.*;
 
 public class MyPlaceType implements PlaceReader{
 	private PlaceType place;

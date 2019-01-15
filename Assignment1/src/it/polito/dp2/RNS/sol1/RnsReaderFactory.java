@@ -14,7 +14,7 @@ import org.xml.sax.SAXException;
 
 import it.polito.dp2.RNS.RnsReader;
 import it.polito.dp2.RNS.RnsReaderException;
-import it.rnsinfo.RnsType;
+import it.polito.dp2.RNS.sol1.jaxb.*;
 
 //Deserializer Class
 public class RnsReaderFactory extends it.polito.dp2.RNS.RnsReaderFactory{
@@ -26,7 +26,7 @@ public class RnsReaderFactory extends it.polito.dp2.RNS.RnsReaderFactory{
 		
 		MyRnsType myRns;
 		try {
-			JAXBContext jc = JAXBContext.newInstance("it.rnsinfo");
+			JAXBContext jc = JAXBContext.newInstance("it.polito.dp2.RNS.sol1.jaxb");
 
 			Unmarshaller u = jc.createUnmarshaller();
 

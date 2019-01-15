@@ -1,13 +1,13 @@
 package it.polito.dp2.RNS.sol1;
 
+
 import java.util.Map;
 import java.util.Set;
 
 import it.polito.dp2.RNS.GateReader;
 import it.polito.dp2.RNS.GateType;
 import it.polito.dp2.RNS.PlaceReader;
-import it.rnsinfo.PlaceType;
-import it.rnsinfo.RnsType;
+import it.polito.dp2.RNS.sol1.jaxb.*;
 
 public class MyGateType extends MyPlaceType implements GateReader{
 	private String gate;

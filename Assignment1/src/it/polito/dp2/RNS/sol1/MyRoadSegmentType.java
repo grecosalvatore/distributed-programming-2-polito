@@ -5,7 +5,7 @@ import java.util.Set;
 
 import it.polito.dp2.RNS.PlaceReader;
 import it.polito.dp2.RNS.RoadSegmentReader;
-import it.rnsinfo.*;
+import it.polito.dp2.RNS.sol1.jaxb.*;
 
 public class MyRoadSegmentType  extends MyPlaceType implements RoadSegmentReader{
 	private RoadSegmentType roadSegment;

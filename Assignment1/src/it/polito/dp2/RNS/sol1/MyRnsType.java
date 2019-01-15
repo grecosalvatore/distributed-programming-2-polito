@@ -19,7 +19,7 @@ import it.polito.dp2.RNS.RnsReader;
 import it.polito.dp2.RNS.RoadSegmentReader;
 import it.polito.dp2.RNS.VehicleReader;
 import it.polito.dp2.RNS.VehicleState;
-import it.rnsinfo.*;
+import it.polito.dp2.RNS.sol1.jaxb.*;
 import javafx.print.PageOrientation;
 
 public class MyRnsType implements RnsReader{
@@ -29,6 +29,7 @@ public class MyRnsType implements RnsReader{
 	private Set<GateReader> gateSet;
 	private Set<RoadSegmentReader> roadSegmentSet;
 	private Set<ParkingAreaReader> parkingAreaSet;
+	private Set<ConnectionReader> connectionsSet;
 	private Map<String,PlaceType> mappingNamePlace;
 	private Map<String,VehicleType> mappingNameVehicle;
 	
@@ -41,18 +42,24 @@ public class MyRnsType implements RnsReader{
 		gateSet = new HashSet<GateReader> ();
 		roadSegmentSet = new HashSet<RoadSegmentReader>();
 		parkingAreaSet = new HashSet<ParkingAreaReader>();
+		connectionsSet = new HashSet<ConnectionReader>();
+		
+		//initialize all data
 		loadPlace();
 		loadGate();
 		loadParkingArea();
 		loadRoadSegment();
-		
+		loadVehicle();
+		loadConnection();
 	}
 
 
 	@Override
 	public Set<ConnectionReader> getConnections() {
 		// TODO Auto-generated method stub
-		return null;
+		if (connectionsSet == null)
+			return null;
+		return connectionsSet;
 	}
 
 
@@ -66,7 +73,7 @@ public class MyRnsType implements RnsReader{
 			//otherwise return all the gates with type = type
 			Set<GateReader> selectedGateSet = new HashSet<GateReader>();
 			for ( GateReader gate : gateSet){
-				if (gate.getType().equals(type)){
+				if (gate.getType().equals(type.value())){
 					selectedGateSet.add(gate);
 				}			
 			}
@@ -81,8 +88,17 @@ public class MyRnsType implements RnsReader{
 		if (service == null){
 			//if the set of services is null return all the parkingareas
 			return parkingAreaSet;
-		}else{
-			return null;
+		}else{	
+			Set<ParkingAreaReader> selectedPA = new HashSet<ParkingAreaReader>();
+			for ( ParkingAreaReader pa : parkingAreaSet){
+				if (pa.getServices().containsAll(service)==true){
+					selectedPA.add(pa);
+				}
+			}
+			if (selectedPA.isEmpty())
+				return null;
+			else
+				return selectedPA;
 		}
 	}
 
@@ -166,15 +182,46 @@ public class MyRnsType implements RnsReader{
 
 
 	@Override
-	public Set<VehicleReader> getVehicles(Calendar arg0, Set<it.polito.dp2.RNS.VehicleType> arg1, VehicleState arg2) {
+	public Set<VehicleReader> getVehicles(Calendar since, Set<it.polito.dp2.RNS.VehicleType> types, VehicleState state) {
 		// TODO Auto-generated method stub
 		if(vehicleSet.isEmpty()){
-			List<VehicleType> vehicleList = rns.getVehicle();		
-			for(VehicleType v: vehicleList) {
-				vehicleSet.add(new MyVehicleType(v,mappingNamePlace));
+			return null;
+		}else{
+			Set<VehicleReader> stateSelection = new HashSet<VehicleReader>();
+			//selcted by STATE
+			if (state==null){
+				stateSelection = vehicleSet;
+			}else{
+				for (VehicleReader v : vehicleSet){
+					if (v.getState().equals(state.value()))
+						stateSelection.add(v);
+				}
 			}
-		}		
-		return vehicleSet;	
+			if (stateSelection == null)
+				return null;
+			//selected by TYPES
+			Set<VehicleReader> typesSelection = new HashSet<VehicleReader>(); 
+			if (types == null){
+				typesSelection = stateSelection;
+			}else{
+				for (VehicleReader v : stateSelection){
+					for (it.polito.dp2.RNS.VehicleType t : types){
+						if (v.getState().equals(t.value()))
+							typesSelection.add(v);
+						}
+				}
+			}
+			Set<VehicleReader> selectedVehicle = new HashSet<VehicleReader>(); 
+			if (since == null){
+				selectedVehicle = typesSelection;
+			}else{
+				for (VehicleReader v : typesSelection){
+					if (v.getEntryTime().after(since)||v.getEntryTime().equals(since))
+						selectedVehicle.add(v);
+				}
+			}
+			return selectedVehicle;	
+		}
 	}
 	
 /*===========================================================================================================
@@ -219,6 +266,28 @@ public class MyRnsType implements RnsReader{
 			}
 		}
 	return;
+	}
+	
+	public void loadConnection(){
+		List<PlaceType> placeList = this.rns.getPlace();
+		for(PlaceType p: placeList) {
+			String source = p.getIdentifiedEntity().getId();
+			for (String destination : p.getIsConnectedTo()){
+				MyConnectionType connection = new MyConnectionType(mappingNamePlace);
+				connection.setFrom(source);
+				connection.setTo(destination);
+				connectionsSet.add(connection);
+			}
+		}
+		return;
+	}
+	
+	public void loadVehicle(){
+		List<VehicleType> vehicleList = rns.getVehicle();		
+		for(VehicleType v: vehicleList) {
+			vehicleSet.add(new MyVehicleType(v,mappingNamePlace));
+		}
+		return;
 	}
 	
 /*=======================================================================================================

@@ -1,7 +1,7 @@
 package it.polito.dp2.RNS.sol1;
 
 import it.polito.dp2.RNS.IdentifiedEntityReader;
-import it.rnsinfo.*;
+import it.polito.dp2.RNS.sol1.jaxb.*;
 
 public class MyIdentifiedEntityType implements IdentifiedEntityReader{
 	private IdentifiedEntityType identifiedEntity;

@@ -19,9 +19,10 @@ import javax.xml.validation.SchemaFactory;
 
 import org.xml.sax.SAXException;
 
-import it.rnsinfo.*;
-import it.rnsinfo.VehicleType;
 import it.polito.dp2.RNS.*;
+import it.polito.dp2.RNS.sol1.jaxb.*;
+import it.polito.dp2.RNS.sol1.jaxb.VehicleType;
+
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 
 
@@ -100,7 +101,7 @@ private void marshaller(){
     // the primer.po package
     JAXBContext jc;
 	try {
-		jc = JAXBContext.newInstance( "it.rnsinfo" );
+		jc = JAXBContext.newInstance( "it.polito.dp2.RNS.sol1.jaxb" );
 
 	    // create a Marshaller and marshal to a file
 	    Marshaller m = jc.createMarshaller();
@@ -244,29 +245,12 @@ private void createVehicles() {
 }
 
 
-
-private void printBlankLine() {
-	System.out.println(" ");
-	}
-
 	
 	private void printLine(char c) {
 		System.out.println(makeLine(c));
 	}
 
-	private void printHeader(String header) {
-		System.out.println(header);
-	}
 
-	private void printHeader(String header, char c) {		
-		System.out.println(header);
-		printLine(c);	
-	}
-	
-	private void printHeader(char c, String header) {		
-		printLine(c);	
-		System.out.println(header);
-	}
 	
 	private StringBuffer makeLine(char c) {
 		StringBuffer line = new StringBuffer(132);

@@ -7,10 +7,7 @@ import java.util.Set;
 
 import it.polito.dp2.RNS.ParkingAreaReader;
 import it.polito.dp2.RNS.PlaceReader;
-import it.rnsinfo.ParkingAreaType;
-import it.rnsinfo.PlaceType;
-import it.rnsinfo.RnsType;
-import it.rnsinfo.VehicleType;
+import it.polito.dp2.RNS.sol1.jaxb.*;
 
 public class MyParkingAreaType extends MyPlaceType implements ParkingAreaReader{
 	private ParkingAreaType parkingArea;

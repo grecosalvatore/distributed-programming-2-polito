@@ -6,7 +6,7 @@ import java.util.Map;
 import it.polito.dp2.RNS.PlaceReader;
 import it.polito.dp2.RNS.VehicleReader;
 import it.polito.dp2.RNS.VehicleState;
-import it.rnsinfo.*;
+import it.polito.dp2.RNS.sol1.jaxb.*;
 
 public class MyVehicleType implements VehicleReader{
 	private VehicleType vehicle;
