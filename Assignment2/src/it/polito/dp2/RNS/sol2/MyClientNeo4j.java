@@ -30,6 +30,7 @@ import org.xml.sax.SAXException;
 
 import it.polito.dp2.RNS.PlaceReader;
 import it.polito.dp2.RNS.lab2.ModelException;
+import it.polito.dp2.RNS.lab2.ServiceException;
 import it.polito.dp2.RNS.lab2.UnknownIdException;
 import it.polito.dp2.RNS.sol2.*;
 import it.polito.dp2.RNS.sol2.ShortestPathsRequest.Relationships;
@@ -40,7 +41,6 @@ public class MyClientNeo4j {
 
 	private  Client client;
 	private static final String serviceBaseUri = System.getProperty("it.polito.dp2.RNS.lab2.URL");
-	//private Map<String, Relationship> mapRelIdToRelationship;
 	private Map<String, Node> mapPlaceIDtoNode;
 	private Map<String,PlaceReader> mapUrlToPlace;
 	private JAXBContext jc;
@@ -53,7 +53,6 @@ public class MyClientNeo4j {
     	SchemaFactory sf = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI);
     	Schema schema = sf.newSchema(new File("custom/dataTypesSchema.xsd"));
     	validator = schema.newValidator();
-    	//validator.setErrorHandler(new MyErrorHandler());
     	
 		// create JAXB context related to the classed generated from the DataTypes schema
         jc = JAXBContext.newInstance("it.polito.dp2.RNS.sol2");
@@ -61,19 +60,19 @@ public class MyClientNeo4j {
 		return;
 	}
 	
-	public void loadGraph(Set<PlaceReader> placeList){
+	public void loadGraph(Set<PlaceReader> placeList) throws ModelException, ServiceException{
 		if (placeList != null){
 			this.mapPlaceIDtoNode = new HashMap<String,Node>();
 			this.mapUrlToPlace = new HashMap<String,PlaceReader>();
 			loadNodes(placeList);
 			loadRelationships(placeList);
 		}else{
-			new ModelException();
+			throw new ModelException();
 		}
 		return;
 	}
 	
-	protected void loadNodes(Set<PlaceReader> placeList){
+	protected void loadNodes(Set<PlaceReader> placeList) throws ModelException, ServiceException{
 		for (PlaceReader place : placeList){
 			String placeId = place.getId();
 			CreateNodeType node = new CreateNodeType();
@@ -81,7 +80,6 @@ public class MyClientNeo4j {
 			//validate the node against schema
 			if (nodeValidation(node) == true){
 				//if no error occurred in the validation send a request to neo4j
-				System.out.println("Sending node " + placeId);
 				Node responseNode = sendCreationNodeRequest(node);
 				//validate the response object against schema
 				if (nodeValidation(responseNode) == true){
@@ -89,28 +87,38 @@ public class MyClientNeo4j {
 					this.mapPlaceIDtoNode.put(placeId, responseNode);
 					//save mapping url - placereader
 					this.mapUrlToPlace.put(responseNode.getSelf(),place);
-				}		
+				}else{
+					throw new ModelException();
+				}
+			}else{
+				throw new ModelException();
 			}
 		}
 		return;
 	}
 	
 	//send a creation node to neo4j and return a nodeObject
-	protected Node sendCreationNodeRequest(CreateNodeType node){
-		// build the web target
+	protected Node sendCreationNodeRequest(CreateNodeType node) throws ModelException, ServiceException{
+		// build the web target	
 		WebTarget target = client.target(getBaseURI()).path("node");
 		Node responseNode;
-		
-		Response response = target
-				   .request()
-				   .accept(MediaType.APPLICATION_JSON)
-				   .post(Entity.json(node));
-		if (response.getStatus()!=201) {
-			System.out.println("Error in remote operation: "+response.getStatus()+" "+response.getStatusInfo());
+		try{
+			Response response = target
+					   .request()
+					   .accept(MediaType.APPLICATION_JSON)
+					   .post(Entity.json(node));
+			if (response.getStatus()!=201) {
+				System.out.println("Error in remote operation: "+response.getStatus()+" "+response.getStatusInfo());
+				if (response.getStatus()>=500)
+					throw new ServiceException();
+				else
+					throw new ModelException();
+			}
+			
+			responseNode = response.readEntity(Node.class);
+		} catch (ProcessingException | IllegalStateException e) {
+			throw new ServiceException("JAX-RS client has raised an exception: " + e.getMessage());
 		}
-		
-		responseNode = response.readEntity(Node.class);
-		//System.out.println(responseNode.self + "  " + responseNode.getData().getId());
 		return responseNode;
 	}
 	
@@ -139,7 +147,7 @@ public class MyClientNeo4j {
 		return true;
 	}
 	
-	protected void loadRelationships(Set<PlaceReader> placeList){
+	protected void loadRelationships(Set<PlaceReader> placeList) throws ModelException, ServiceException{
 		for (PlaceReader fromPlace : placeList){
 			String fromID = fromPlace.getId();
 			Set<PlaceReader> connections = fromPlace.getNextPlaces();
@@ -161,118 +169,124 @@ public class MyClientNeo4j {
 							//validate the response object against schema
 							if (nodeValidation(responseRelationship) == true){
 								//save in local DB
-								//mapPlaceIDtoNode.put(placeId, responseNode);
-							}		
+							}else{
+								throw new ModelException();
+							}
 						}
 					}else{
 						//error : to node not present in the db
+						throw new ModelException();
 					}
 				}
 			}else{
 				//error: the place is not in the db
+				throw new ModelException();
 			}
 		}
 		return;
 	}
 	
-	protected Relationship sendCreationRelationshipRequest (String fromId,CreateRelationshipType relationship){
+	protected Relationship sendCreationRelationshipRequest (String fromId,CreateRelationshipType relationship) throws ServiceException, ModelException{
 		Node fromNode = mapPlaceIDtoNode.get(fromId);
-		String targetUri = fromNode.getSelf();
-		
-		// build the web target
-		WebTarget target = client.target(UriBuilder.fromUri(targetUri+"/relationships"));
 		Relationship responseRelationship;
-		
-		Response response = target
-				   .request()
-				   .accept(MediaType.APPLICATION_JSON)
-				   .post(Entity.json(relationship));
-		if (response.getStatus()!=201) {
-			System.out.println("Error in remote operation: "+response.getStatus()+" "+response.getStatusInfo());
+		try{
+			String targetUri = fromNode.getSelf();
+			
+			// build the web target
+			WebTarget target = client.target(UriBuilder.fromUri(targetUri+"/relationships"));
+			
+			
+			Response response = target
+					   .request()
+					   .accept(MediaType.APPLICATION_JSON)
+					   .post(Entity.json(relationship));
+			if (response.getStatus()!=201) {
+				System.out.println("Error in remote operation: "+response.getStatus()+" "+response.getStatusInfo());
+				if (response.getStatus()>=500)
+					throw new ServiceException();
+				else
+					throw new ModelException();
+			}
+			
+			responseRelationship = response.readEntity(Relationship.class);
+		} catch (ProcessingException | IllegalStateException e) {
+			throw new ServiceException("JAX-RS client has raised an exception: " + e.getMessage());
 		}
-		
-		responseRelationship = response.readEntity(Relationship.class);
-		//System.out.println("relationship: from: "+responseRelationship.getStart()+" to : "+responseRelationship.getEnd()+"\n");
 		return responseRelationship;
 	}
 	
-	public Set<List<String>> sendShortestPathsRequest(String source, String destination, int maxlength) throws UnknownIdException{
+	public Set<List<String>> sendShortestPathsRequest(String source, String destination, int maxlength) throws UnknownIdException, ServiceException{
 		int max_depth;
 		ObjectFactory of;
-		if (this.mapPlaceIDtoNode.containsKey(source)){
-			if (this.mapPlaceIDtoNode.containsKey(destination)){
-				Node sourceNode = this.mapPlaceIDtoNode.get(source);
-				Node destinationNode = this.mapPlaceIDtoNode.get(destination);
-				ShortestPathsRequest requestShortPaths = new ShortestPathsRequest();		
-				if (maxlength<=0)
-					max_depth = Integer.MAX_VALUE;
-				else
-					max_depth = maxlength;
-				requestShortPaths.setMaxDepth(BigInteger.valueOf(max_depth));
-				requestShortPaths.setAlgorithm("shortestPath");
-				requestShortPaths.setTo(destinationNode.getSelf());
-				of = new ObjectFactory();
-				Relationships rel = of.createShortestPathsRequestRelationships();
-				rel.setDirection("out");
-				rel.setType("ConnectedTo");
-				requestShortPaths.setRelationships(rel);
-				if (nodeValidation(requestShortPaths)){
-					String targetUri = sourceNode.getSelf();
-					
-					// build the web target
-					WebTarget target = client.target(UriBuilder.fromUri(targetUri+"/paths"));
-					System.out.println("Sending Short Path Request...\n");
-					
-					System.out.println(target.getUri());
-					System.out.println("TO : " + requestShortPaths.getTo());
-					System.out.println("MaxD : " + requestShortPaths.getMaxDepth());
-					System.out.println("Type : " + requestShortPaths.getRelationships().getType());
-					System.out.println("Dir : " + requestShortPaths.getRelationships().getDirection());
-					System.out.println("Alg : " + requestShortPaths.getAlgorithm());
-					Response response = target
-							   .request()
-							   .accept(MediaType.APPLICATION_JSON)
-							   .post(Entity.json(requestShortPaths));
-					if (response.getStatus()!=200) {
+		try{
+			if (this.mapPlaceIDtoNode.containsKey(source)){
+				if (this.mapPlaceIDtoNode.containsKey(destination)){
+					Node sourceNode = this.mapPlaceIDtoNode.get(source);
+					Node destinationNode = this.mapPlaceIDtoNode.get(destination);
+					ShortestPathsRequest requestShortPaths = new ShortestPathsRequest();		
+					if (maxlength<=0)
+						max_depth = Integer.MAX_VALUE;
+					else
+						max_depth = maxlength;
+					requestShortPaths.setMaxDepth(BigInteger.valueOf(max_depth));
+					requestShortPaths.setAlgorithm("shortestPath");
+					requestShortPaths.setTo(destinationNode.getSelf());
+					of = new ObjectFactory();
+					Relationships rel = of.createShortestPathsRequestRelationships();
+					rel.setDirection("out");
+					rel.setType("ConnectedTo");
+					requestShortPaths.setRelationships(rel);
+					if (nodeValidation(requestShortPaths)){
+						String targetUri = sourceNode.getSelf();
 						
-						System.out.println("Error in remote operation: "+response.getStatus()+" "+response.getStatusInfo());
-					}
-					System.out.println("Response recived!\n");
-					System.out.println(response.toString());
-					
-					List<ShortPath> shortestPaths = response.readEntity(new GenericType<List<ShortPath>>() {});
-					//ShortestPathsResponse shortestPaths = response.readEntity(ShortestPathsResponse.class);
-				
-					Set<List<String>> reponsePaths = new HashSet<List<String>>();
-					//iterate all paths
-					//System.out.println(shortestPaths.getShortPath().toString());
-					for (ShortPath paths :shortestPaths){
-						if (nodeValidation(paths)==true){
-							System.out.println("scanning path");
-							List<String> pathUrl = paths.getNodes();
-							List<String> pathID = new ArrayList<String>();
-							System.out.println("path : ");
-							for (String nodeUrl : pathUrl){
-								PlaceReader place = this.mapUrlToPlace.get(nodeUrl);
-								pathID.add(place.getId());
-								System.out.println(place.getId());
-							}
-							reponsePaths.add(pathID);
-						}else{
-							//error in the validation of the response
-							System.out.println("Error in the validation of short path response\n");
+						// build the web target
+						WebTarget target = client.target(UriBuilder.fromUri(targetUri+"/paths"));
+	
+						Response response = target
+								   .request()
+								   .accept(MediaType.APPLICATION_JSON)
+								   .post(Entity.json(requestShortPaths));
+						if (response.getStatus()!=200) {
+							System.out.println("Error in remote operation: "+response.getStatus()+" "+response.getStatusInfo());
+							if (response.getStatus()<500&&response.getStatus()>400)
+								throw new UnknownIdException();
+							else
+								throw new ServiceException();
 						}
+						
+						List<ShortPath> shortestPaths = response.readEntity(new GenericType<List<ShortPath>>() {});
+						Set<List<String>> reponsePaths = new HashSet<List<String>>();
+						//iterate all paths
+						for (ShortPath paths :shortestPaths){
+							if (nodeValidation(paths)==true){
+								System.out.println("scanning path");
+								List<String> pathUrl = paths.getNodes();
+								List<String> pathID = new ArrayList<String>();
+								System.out.println("path : ");
+								for (String nodeUrl : pathUrl){
+									PlaceReader place = this.mapUrlToPlace.get(nodeUrl);
+									pathID.add(place.getId());
+									System.out.println(place.getId());
+								}
+								reponsePaths.add(pathID);
+							}else{
+								//error in the validation of the response
+								System.out.println("Error in the validation of short path response\n");
+							}
+						}
+						return 	reponsePaths;
+						
 					}
-					return 	reponsePaths;
-					
+				}else{
+					//error destination node is not in the local db
+					throw new UnknownIdException();
 				}
 			}else{
-				//error destination node is not in the local db
-				throw new UnknownIdException();
+				//error source node in not in the local db
+				throw  new UnknownIdException();
 			}
-		}else{
-			//error source node in not in the local db
-			throw  new UnknownIdException();
+		} catch (ProcessingException | IllegalStateException e) {
+			throw new ServiceException("JAX-RS client has raised an exception: " + e.getMessage());
 		}
 		return null;
 	}
