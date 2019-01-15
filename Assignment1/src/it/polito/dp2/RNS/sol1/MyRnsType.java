@@ -184,8 +184,8 @@ public class MyRnsType implements RnsReader{
 	@Override
 	public Set<VehicleReader> getVehicles(Calendar since, Set<it.polito.dp2.RNS.VehicleType> types, VehicleState state) {
 		// TODO Auto-generated method stub
-		if(vehicleSet.isEmpty()){
-			return null;
+		if(vehicleSet==null||vehicleSet.isEmpty()){
+			return new HashSet<VehicleReader>();
 		}else{
 			Set<VehicleReader> stateSelection = new HashSet<VehicleReader>();
 			//selcted by STATE
@@ -284,6 +284,10 @@ public class MyRnsType implements RnsReader{
 	
 	public void loadVehicle(){
 		List<VehicleType> vehicleList = rns.getVehicle();		
+		if (vehicleList == null||vehicleList.isEmpty()){
+			vehicleSet = null;
+			return;
+		}
 		for(VehicleType v: vehicleList) {
 			vehicleSet.add(new MyVehicleType(v,mappingNamePlace));
 		}
@@ -311,8 +315,13 @@ public class MyRnsType implements RnsReader{
 	public void mappingVehicles(){
 		//create the hashmap
 		mappingNameVehicle = new HashMap<String, VehicleType> ();
+		List<VehicleType> vehicleList = this.rns.getVehicle();
+		if (vehicleList == null||vehicleList.isEmpty()){
+			mappingNameVehicle = null;
+			return;
+		}
 		//fill the hashmap
-		for (VehicleType v : this.rns.getVehicle()){
+		for (VehicleType v : vehicleList){
 			String name = new String(v.getIdentifiedEntity().getId());
 			VehicleType vehicle = v;
 			mappingNameVehicle.put(name,vehicle);
