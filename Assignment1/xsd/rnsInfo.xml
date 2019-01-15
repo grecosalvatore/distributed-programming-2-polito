@@ -27,6 +27,14 @@
 		</parkingArea>
 	</place>
 	
+	<place capacity="5">
+		<identifiedEntity id="p8"/>
+		<parkingArea>
+			<service>vendingMachine</service>
+			<service>Telephone</service>
+		</parkingArea>
+	</place>
+	
 	
 	
 	<place capacity="50">
