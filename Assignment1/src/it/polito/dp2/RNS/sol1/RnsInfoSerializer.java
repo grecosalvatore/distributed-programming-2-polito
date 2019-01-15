@@ -229,6 +229,7 @@ private void createVehicles() {
 		GregorianCalendar gc = new GregorianCalendar();
 		gc.setTimeInMillis(v.getEntryTime().getTimeInMillis());
 		DatatypeFactory dtf;
+		//managing date and time issues
 		try {
 			dtf = DatatypeFactory.newInstance();
 			XMLGregorianCalendar xgc = dtf.newXMLGregorianCalendar(gc);

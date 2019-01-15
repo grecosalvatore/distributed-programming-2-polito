@@ -34,7 +34,9 @@ public class MyVehicleType implements VehicleReader{
 	@Override
 	public Calendar getEntryTime() {
 		// TODO Auto-generated method stub
-		return vehicle.getEntryTime().toGregorianCalendar();
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTimeInMillis(vehicle.getEntryTime().toGregorianCalendar().getTimeInMillis());
+		return calendar;
 	}
 
 	@Override
