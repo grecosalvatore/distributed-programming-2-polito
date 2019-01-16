@@ -45,7 +45,7 @@
 				<arg value="-d" />
 				<arg value="${gen.dir}" />
 				<arg value="-p" />
-				<arg value="it.polito.dp2.RNS.sol3.jaxb" />
+				<arg value="it.polito.dp2.RNS.sol3.jaxb.rnsSystem" />
 				<arg value="${xsd.dir}/RnsSystem.xsd" />
 			</exec>
 	</target>
@@ -71,8 +71,8 @@
 				<src path="${src.dir}"/>
 				<src path="${gen.dir}"/>
 				<include name="it/polito/dp2/RNS/sol3/service/**" />
-				<include name="it/polito/dp2/RNS/sol3/jaxb/**" />
-				<include name="it/polito/dp2/RNS/sol3/jaxb/Neo4j/**" />
+				<include name="it/polito/dp2/RNS/sol3/jaxb/rnsSystem/**" />
+				<include name="it/polito/dp2/RNS/sol3/jaxb/neo4j/**" />
 				<classpath>
 					<path refid="sol.classpath" />
 				</classpath>
