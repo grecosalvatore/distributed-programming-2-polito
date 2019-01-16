@@ -72,7 +72,7 @@
 				<src path="${gen.dir}"/>
 				<include name="it/polito/dp2/RNS/sol3/service/**" />
 				<include name="it/polito/dp2/RNS/sol3/jaxb/rnsSystem/**" />
-				<include name="it/polito/dp2/RNS/sol3/jaxb/neo4j/**" />
+				<include name="it/polito/dp2/RNS/sol3/jaxb/Neo4j/**" />
 				<classpath>
 					<path refid="sol.classpath" />
 				</classpath>
