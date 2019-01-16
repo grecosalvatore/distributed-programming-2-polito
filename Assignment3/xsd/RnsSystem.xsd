@@ -36,7 +36,12 @@
 				<xsd:element name="destination" type="xsd:string" minOccurs="1"/>
 				<xsd:element name="destinationLink" type="xsd:anyURI" minOccurs="0"/>
 				<xsd:element ref="position" minOccurs="0"/>
+				<xsd:element name="entryTime" type="xsd:dateTime" minOccurs="0"/>
 				<xsd:element name="suggestedPathLink" type="xsd:anyURI" minOccurs="0"/>
+				<xsd:element name="deleteVehicleLink" type="xsd:anyURI" minOccurs="0"/>
+				<xsd:element name="exitRequestLink" type="xsd:anyURI" minOccurs="0"/>
+				<xsd:element name="changeStateLink" type="xsd:anyURI" minOccurs="0"/>
+				<xsd:element name="currentPositionLink" type="xsd:anyURI" minOccurs="0"/>
 			</xsd:sequence>
 		</xsd:complexType>
 	</xsd:element>
@@ -61,7 +66,7 @@
 				<xsd:element name="startId" type="xsd:string" minOccurs="1" />
 				<xsd:element name="end" type="xsd:anyURI" minOccurs="0" />
 				<xsd:element name="endId" type="xsd:string" minOccurs="1" />
-				<xsd:element name="next" type="xsd:anyURI" minOccurs="0" />
+				<xsd:element name="currentPositionLink" type="xsd:anyURI" minOccurs="0" />
 				<xsd:element name="path" minOccurs="1" maxOccurs="unbounded">
 					<xsd:complexType>
 						<xsd:sequence>
