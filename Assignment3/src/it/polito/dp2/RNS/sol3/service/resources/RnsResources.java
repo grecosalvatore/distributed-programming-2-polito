@@ -1,7 +1,7 @@
 package it.polito.dp2.RNS.sol3.service.resources;
 
 
-import it.polito.dp2.RNS.sol3.jaxb.*;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.*;
 import it.polito.dp2.RNS.sol3.service.RnsService.RnsDeployer;
 import it.polito.dp2.RNS.sol3.service.RnsService.RnsService;
 

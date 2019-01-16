@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import it.polito.dp2.RNS.ConnectionReader;
-import it.polito.dp2.RNS.sol3.jaxb.*;
-import it.polito.dp2.RNS.sol3.jaxb.SuggestedPath.Path;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.*;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.SuggestedPath.Path;
 
 
 

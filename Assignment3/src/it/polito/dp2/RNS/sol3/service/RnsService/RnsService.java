@@ -15,19 +15,10 @@ import java.util.Set;
 
 import org.xml.sax.SAXException;
 
-import it.polito.dp2.RNS.sol3.jaxb.ConnectedTo;
-import it.polito.dp2.RNS.sol3.jaxb.ConnectedTo.To;
-import it.polito.dp2.RNS.sol3.jaxb.Connection;
-import it.polito.dp2.RNS.sol3.jaxb.Connections;
-import it.polito.dp2.RNS.sol3.jaxb.Place;
-import it.polito.dp2.RNS.sol3.jaxb.Places;
-import it.polito.dp2.RNS.sol3.jaxb.Position;
-import it.polito.dp2.RNS.sol3.jaxb.Rns;
-import it.polito.dp2.RNS.sol3.jaxb.State;
-import it.polito.dp2.RNS.sol3.jaxb.SuggestedPath;
-import it.polito.dp2.RNS.sol3.jaxb.SuggestedPath.Path;
-import it.polito.dp2.RNS.sol3.jaxb.Vehicle;
-import it.polito.dp2.RNS.sol3.jaxb.Vehicles;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.*;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.ConnectedTo.To;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.SuggestedPath.Path;
+import it.polito.dp2.RNS.sol3.jaxb.neo4j.*;
 import it.polito.dp2.RNS.sol3.service.db.RnsDB;
 
 import javax.ws.rs.BadRequestException;
@@ -72,7 +63,9 @@ public class RnsService {
 				}
 				return vehicles;
 			}else{
-				return null;
+				Vehicles emptyVehicle = new Vehicles();
+				emptyVehicle.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"));
+				return emptyVehicle;
 			}
 		}
 		
@@ -108,7 +101,7 @@ public class RnsService {
 								state.setVehicleState("IN_TRANSIT");
 								addVehicle.setState(state);
 								sp = fillSuggestedPathInfo(uriInfo,vehicle,pathId);
-								for (Path p : sp.getPath()){
+								for (SuggestedPath.Path p : sp.getPath()){
 									System.out.println(p.getPalceId());
 								}
 								if ( db.addVehicle(addVehicle) == true){
@@ -151,7 +144,9 @@ public class RnsService {
 				}
 				return places;
 			}else{
-				return null;
+				Places emptyPlaces = new Places();
+				emptyPlaces.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"));
+				return emptyPlaces;
 			}
 		}
 		
@@ -167,7 +162,9 @@ public class RnsService {
 				}
 				return places;
 			}else{
-				return null;
+				Places emptyPlaces = new Places();
+				emptyPlaces.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"));
+				return emptyPlaces;
 			}
 		}
 		
@@ -183,7 +180,9 @@ public class RnsService {
 				}
 				return places;
 			}else{
-				return null;
+				Places emptyPlaces = new Places();
+				emptyPlaces.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"));
+				return emptyPlaces;
 			}
 		}
 		
@@ -300,7 +299,7 @@ public class RnsService {
 		//this method return true if the next place is the next on the suggested path,false otherwise
 		private boolean checkIfInSuggestedPath(SuggestedPath sp,String oldP,String newP){
 			String previous = null;
-			for (Path p : sp.getPath()){
+			for (SuggestedPath.Path p : sp.getPath()){
 				if (previous==null)
 					previous=p.getPalceId();
 				if ((oldP.equals(previous))&&(newP.equals(p.getPalceId()))){

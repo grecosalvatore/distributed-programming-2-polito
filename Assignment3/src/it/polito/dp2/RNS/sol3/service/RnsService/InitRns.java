@@ -17,8 +17,8 @@ import it.polito.dp2.RNS.RnsReader;
 import it.polito.dp2.RNS.RnsReaderException;
 import it.polito.dp2.RNS.RnsReaderFactory;
 import it.polito.dp2.RNS.RoadSegmentReader;
-import it.polito.dp2.RNS.sol3.jaxb.*;
-import it.polito.dp2.RNS.sol3.jaxb.ConnectedTo.To;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.*;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.ConnectedTo.To;
 import it.polito.dp2.RNS.sol3.service.db.RnsDB;
 
 public class InitRns {
