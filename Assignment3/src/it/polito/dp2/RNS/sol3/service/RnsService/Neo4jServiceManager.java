@@ -57,7 +57,7 @@ public class Neo4jServiceManager {
 	private Neo4jServiceManager ()  {
 		this.client = ClientBuilder.newClient();
 		if (serviceBaseUri == null)
-			serviceBaseUri = "http://localhost:7474/db";
+			serviceBaseUri = "http://localhost:8080/RnsSystem/rest";
 		
 		// create validator that uses the DataTypes schema
     	SchemaFactory sf = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI);
@@ -127,6 +127,7 @@ public class Neo4jServiceManager {
 				
 			}else{
 				//error in the validation of the request
+				throw new InternalServerErrorException();
 			}
 		}
 		return;
@@ -158,6 +159,7 @@ public class Neo4jServiceManager {
 						}
 					}else{
 						//error in the validation of request
+						throw new InternalServerErrorException();
 					}
 				}else{
 					//erro to node is null
@@ -191,10 +193,10 @@ public class Neo4jServiceManager {
 		      return false;
 		} catch (IOException e) {
 			System.out.println("Unexpected I/O Exception");
-			return false;
+			throw new InternalServerErrorException();
 		} catch (JAXBException e) {
 			System.out.println("Unexpected JAXB Exception");
-			return false;
+			throw new InternalServerErrorException();	
 		}
 		return true;
 	}
@@ -297,6 +299,7 @@ public class Neo4jServiceManager {
 					return null;
 				}else{
 					//error in the validation of request
+					throw new InternalServerErrorException();
 				}
 			}else{
 				//error destination node is not in the local db

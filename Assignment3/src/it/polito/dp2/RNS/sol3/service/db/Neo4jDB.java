@@ -3,6 +3,7 @@ package it.polito.dp2.RNS.sol3.service.db;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Place;
 import it.polito.dp2.RNS.sol3.jaxb.neo4j.Node;
 
 public class Neo4jDB {

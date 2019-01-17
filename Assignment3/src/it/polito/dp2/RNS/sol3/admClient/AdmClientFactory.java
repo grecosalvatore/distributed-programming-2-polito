@@ -8,7 +8,7 @@ public class AdmClientFactory extends it.polito.dp2.RNS.lab3.AdmClientFactory{
 	@Override
 	public AdmClient newAdmClient() throws AdmClientException {
 		// TODO Auto-generated method stub
-		return null;
+		return new MyAdmClient();
 	}
 
 }

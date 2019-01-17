@@ -75,33 +75,54 @@ public class RnsResources {
     		@ApiResponse(code = 404, message = "Not Found"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public Vehicle getVehicle(@PathParam("id") String plateId) {
-		Vehicle vehicle = service.getVehicle(uriInfo,plateId);
-		if (vehicle==null)
-			throw new NotFoundException();
-		return vehicle;
+	public Response getVehicle(@PathParam("id") String plateId) {
+		return service.getVehicle(uriInfo,plateId);
 	}
 	
 	@PUT
 	@Path("/vehicles/{id}")
-    @ApiOperation(value = "putVehicle", notes = "Enter a vehicle in the system"
+    @ApiOperation(value = "putVehicle", notes = "Vehicle request permission to enter the system"
 	)
     @ApiResponses(value = {
-    		@ApiResponse(code = 201, message = "Created"),
+    		@ApiResponse(code = 200, message = "Permession granted"),
+    		@ApiResponse(code = 400, message = "Bad Request"),
     		})
 	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public SuggestedPath putVehicle(@PathParam("id") String id, Vehicle vehicle) {
+	public Response putVehicle(@PathParam("id") String id, Vehicle vehicle) {
 		if(id.equals(vehicle.getPlateId())){
-			SuggestedPath suggestedPath = service.tryEnterVehicle(uriInfo, vehicle);
-			if (suggestedPath != null){
-				return suggestedPath;
-			}
-			return null;
+			return service.tryEnterVehicle(uriInfo, vehicle);
 		}else{
 			//plateId != id of resource
-			throw new BadRequestException(); 
+			return Response.status(Response.Status.BAD_REQUEST).entity("Plate id and resource uri are different").build();
 		}
+	}
+	
+	@DELETE
+	@Path("/vehicles/{id}")
+    @ApiOperation(value = "deleteVehicle", notes = "Remove a vehicle from the system (for administrators)"
+	)
+    @ApiResponses(value = {
+    		@ApiResponse(code = 200, message = "Vehicle succesfully removed from the system"),
+    		@ApiResponse(code = 404, message = "Not Found"),
+    		})
+	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
+	public Response removeVehicle(@PathParam("id") String plateId) {
+		return service.deleteVehicle(plateId);
+	}
+	
+	@DELETE
+	@Path("/vehicles/{id}/exit")
+    @ApiOperation(value = "deleteVehicle", notes = "Vehicle request to exit the system"
+	)
+    @ApiResponses(value = {
+    		@ApiResponse(code = 200, message = "OK"),
+    		@ApiResponse(code = 403, message = "Forbidden"),
+    		@ApiResponse(code = 404, message = "Not Found"),
+    		})
+	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
+	public Response exitVehicle(@PathParam("id") String plateId) {
+		return service.exitVehicleRequest(plateId);
 	}
 	
 	@GET
@@ -113,12 +134,8 @@ public class RnsResources {
     		@ApiResponse(code = 404, message = "Not Found"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public State getState(@PathParam("id") String plateId) {
-		State state = new State();
-		state = service.getVehicleState(uriInfo, plateId);
-		if (state == null)
-			throw new NotFoundException(); // vehicle not found
-		return state;
+	public Response getState(@PathParam("id") String plateId) {
+		return service.getVehicleState(uriInfo, plateId);
 	}
 	
 	@PUT
@@ -132,7 +149,7 @@ public class RnsResources {
     		})
 	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public State changeState(@PathParam("id") String id, State newState) {
+	public Response changeState(@PathParam("id") String id, State newState) {
 		return service.changeVehicleState(uriInfo, id, newState);
 	}
 
@@ -145,13 +162,8 @@ public class RnsResources {
     		@ApiResponse(code = 404, message = "Not Found"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public SuggestedPath getSuggestedPath(@PathParam("id") String plateId) {
-		SuggestedPath sp = new SuggestedPath();
-		sp = service.getSuggestedPath(uriInfo,plateId);
-		if (sp == null){
-			throw new NotFoundException(); //vehicle not found
-		}
-		return sp;
+	public Response getSuggestedPath(@PathParam("id") String plateId) {	
+		return service.getSuggestedPath(uriInfo,plateId);
 	}
 
 	@GET
@@ -163,13 +175,8 @@ public class RnsResources {
     		@ApiResponse(code = 404, message = "Not found"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public Position getCurrentPosition(@PathParam("id") String plateId) {
-		Position p = new Position();
-		p = service.getVehicleCurrentPosition(uriInfo,plateId);
-		if (p == null){
-			throw new NotFoundException(); //vehicle not found
-		}
-		return p;
+	public Response getCurrentPosition(@PathParam("id") String plateId) {
+		return service.getVehicleCurrentPosition(uriInfo,plateId);
 	}
 	
 	@PUT
@@ -184,7 +191,7 @@ public class RnsResources {
     		})
 	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public SuggestedPath changeCurrentPosition(@PathParam("id") String plateId, Position newPosition) {
+	public Response changeCurrentPosition(@PathParam("id") String plateId, Position newPosition) {
 		return service.changeCurrentPosition(uriInfo, plateId, newPosition);
 	}
 
@@ -209,12 +216,9 @@ public class RnsResources {
     		@ApiResponse(code = 404, message = "NOT FOUND"),
     		})
 	@Produces({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
-	public Place getPlace(@PathParam("id") String placeId) {
-		Place place = service.getPlace(uriInfo,placeId);
-		if (place==null)
-			throw new NotFoundException();
-		return place;
-		}
+	public Response getPlace(@PathParam("id") String placeId) {
+		return service.getPlace(uriInfo,placeId);
+	}
 	
 	@GET
 	@Path("/places/{id}/currentVehicles")

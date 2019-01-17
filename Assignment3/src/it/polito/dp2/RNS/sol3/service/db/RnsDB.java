@@ -222,6 +222,17 @@ public class RnsDB {
 		}
 	}
 	
+
+	public boolean deleteVehicle(String plateId){
+		if (vehicleById.containsKey(plateId)){
+			vehicleById.remove(plateId);
+			suggestedPathByVehicle.remove(plateId);
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
 	public boolean changeState(String plateId,State newState){
 		Vehicle oldVehicle = vehicleById.get(plateId);
 		if (oldVehicle!=null){

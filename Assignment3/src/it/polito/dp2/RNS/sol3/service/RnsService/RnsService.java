@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -15,23 +16,37 @@ import java.util.Set;
 
 import org.xml.sax.SAXException;
 
-import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.*;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.ConnectedTo;
 import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.ConnectedTo.To;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Connection;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Connections;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Place;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Places;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Position;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Rns;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.State;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.SuggestedPath;
 import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.SuggestedPath.Path;
-import it.polito.dp2.RNS.sol3.jaxb.neo4j.*;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Vehicle;
+import it.polito.dp2.RNS.sol3.jaxb.rnsSystem.Vehicles;
 import it.polito.dp2.RNS.sol3.service.db.RnsDB;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.util.JAXBSource;
+import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -42,6 +57,7 @@ public class RnsService {
 		private RnsDB db = RnsDB.getRnsDB();
 		private InitRns initDB = InitRns.getInitRns();
 		private Neo4jServiceManager neo4jService = Neo4jServiceManager.getNeo4jServiceManager(); 
+		private DateTimeManager timestampManager = new DateTimeManager();
 		
 		public RnsService() {
 		}
@@ -63,23 +79,24 @@ public class RnsService {
 				}
 				return vehicles;
 			}else{
-				Vehicles emptyVehicle = new Vehicles();
-				emptyVehicle.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"));
-				return emptyVehicle;
+				//create an empty list of vehicles with only the self element setted
+				Vehicles emptyVehicles = new Vehicles();
+				emptyVehicles.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"));
+				return emptyVehicles;
 			}
 		}
 		
 		//Get a single place given the placeId, filled with all URIs
-		public Vehicle getVehicle(UriInfo uriInfo,String plateId) {
+		public Response getVehicle(UriInfo uriInfo,String plateId) {
 			Vehicle v = db.getVehicle(plateId);
 			if (v == null)
-				return null;
+				return Response.status(Response.Status.NOT_FOUND).entity("Vehicle "+plateId+" is not in the system").build();
 			Vehicle vehicle = fillVehicleInfo(uriInfo,v);		
-			return vehicle;
+			return Response.ok(vehicle).build();
 		}
 		
 		//vehicle request to enter the system
-		public SuggestedPath tryEnterVehicle(UriInfo uriInfo,Vehicle vehicle){
+		public Response tryEnterVehicle(UriInfo uriInfo,Vehicle vehicle){
 			String originId = vehicle.getOrigin();
 			Place origin = db.getPlace(originId);
 			if (origin != null){
@@ -91,6 +108,8 @@ public class RnsService {
 						if (destination != null){
 							List<String> pathId = neo4jService.findShortestPath(originId,destinationId);
 							if (pathId != null){
+								if (pathId.isEmpty())
+									return Response.status(Response.Status.BAD_REQUEST).entity("Destination place is not reachable starting from this origin").build();
 								SuggestedPath sp = new SuggestedPath();
 								Vehicle addVehicle = new Vehicle();
 								addVehicle = vehicle;
@@ -100,36 +119,40 @@ public class RnsService {
 								State state = new State();
 								state.setVehicleState("IN_TRANSIT");
 								addVehicle.setState(state);
-								sp = fillSuggestedPathInfo(uriInfo,vehicle,pathId);
-								for (SuggestedPath.Path p : sp.getPath()){
-									System.out.println(p.getPalceId());
+								try {
+									XMLGregorianCalendar currentTimestamp = timestampManager.getCurrentXmlDate();
+									addVehicle.setEntryTime(currentTimestamp);
+								} catch (DatatypeConfigurationException e) {
+									// TODO Auto-generated catch block
+									throw new InternalServerErrorException();
 								}
+								sp = fillSuggestedPathInfo(uriInfo,vehicle,pathId);
 								if ( db.addVehicle(addVehicle) == true){
 									//vehicle added succesfully
 									if (db.setSuggestedPath(addVehicle.getPlateId(), sp) == true)
-										return sp;
+										return Response.ok(sp).build();
 								}
+								throw new InternalServerErrorException();//impossible add the vehicle in the db
 							}else{
-								//error : null path
-								
+								//error : neo4j returned a null path
+								throw new InternalServerErrorException();
 							}
 						}else{
 							//error : destination is not in the db
-							throw new BadRequestException();
+							return Response.status(Response.Status.BAD_REQUEST).entity("Destination place is not in the system").build();
 						}
 					}else{
 						//error is not a in or inout gate
-						throw new BadRequestException();
+						return Response.status(Response.Status.FORBIDDEN).entity("Origin place is not an IN/INOUT Gate").build();
 					}
 				}else{
 					//error is not a gate
-					throw new BadRequestException();
+					return Response.status(Response.Status.FORBIDDEN).entity("Origin place is not an IN/INOUT Gate").build();
 				}
 			}else{
 				//error : origin place is not in the system
-				throw new BadRequestException();
+				return Response.status(Response.Status.BAD_REQUEST).entity("Origin place is not in the system").build();
 			}
-			return null;
 		}
 		
 		//Get the list of all places in the system
@@ -144,6 +167,7 @@ public class RnsService {
 				}
 				return places;
 			}else{
+				//create an empty list of places with only the self element setted
 				Places emptyPlaces = new Places();
 				emptyPlaces.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"));
 				return emptyPlaces;
@@ -162,6 +186,7 @@ public class RnsService {
 				}
 				return places;
 			}else{
+				//create an empty list of places with only the self element setted
 				Places emptyPlaces = new Places();
 				emptyPlaces.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"));
 				return emptyPlaces;
@@ -180,65 +205,118 @@ public class RnsService {
 				}
 				return places;
 			}else{
+				//create an empty list of places with only the self element setted
 				Places emptyPlaces = new Places();
 				emptyPlaces.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"));
 				return emptyPlaces;
 			}
 		}
 		
-		public SuggestedPath getSuggestedPath(UriInfo uriInfo,String plateId){
-			SuggestedPath sp = db.getSuggestedPathByPlateId(plateId);
-			if (sp == null)
-				return null;
-			return sp;
+		//Get the list of all parking areas in the system
+		public Places getParkingAreas(UriInfo uriInfo) {
+			Places places = new Places();
+			Collection<Place> parkingAreas = db.getParkingAreas();
+			if (parkingAreas != null){
+				for (Place p : parkingAreas){
+					Place place = new Place();
+					place = fillPlaceInfo(uriInfo,p);	
+					places.getPlace().add(place);
+				}
+				return places;
+			}else{
+				//create an empty list of places with only the self element setted
+				Places emptyPlaces = new Places();
+				emptyPlaces.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"));
+				return emptyPlaces;
+			}
 		}
 		
-		public State getVehicleState(UriInfo uriInfo,String plateId){
+		public Response getSuggestedPath(UriInfo uriInfo,String plateId){
+			SuggestedPath sp = db.getSuggestedPathByPlateId(plateId);
+			if (sp == null)
+				return Response.status(Response.Status.NOT_FOUND).entity("Vehicle "+plateId+" is not in the system").build();
+			return Response.ok(sp).build();
+		}
+		
+		public Response getVehicleState(UriInfo uriInfo,String plateId){
 			Vehicle v = db.getVehicle(plateId);
 			if (v == null)
-				return null; // vehicle not found
+				return Response.status(Response.Status.NOT_FOUND).entity("Vehicle "+plateId+" is not in the system").build();
 			State state = new State();
 			state.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()+"/state"));
 			state.setVehicleState(v.getState().getVehicleState());
-			return state;
+			return Response.ok(state).build();
 		}
 		
-		public State changeVehicleState(UriInfo uriInfo,String plateId,State newState){
+		public Response changeVehicleState(UriInfo uriInfo,String plateId,State newState){
 			Vehicle vehicle = db.getVehicle(plateId);
 			if (vehicle == null)
-				return null; // vehicle not found
+				return Response.status(Response.Status.NOT_FOUND).entity("Vehicle "+plateId+" is not in the system").build();
 			State oldState = vehicle.getState();
 			if (newState.getVehicleState().equals("IN_TRANSIT")||newState.getVehicleState().equals("PARKED")){
+				//old state and new state are equal
 				if (newState.equals(oldState)){
 					newState.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+vehicle.getPlateId()+"/state"));
-					return newState;
+					return Response.ok(newState).build();
 				}else{
 					//update state
 					if (db.changeState(plateId, newState)==true){	
 						newState.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+vehicle.getPlateId()+"/state"));
-						return newState;
+						return Response.ok(newState).build();
 					}else
-						//internal server error
+						//internal server error -> impossible update the db
 						throw new InternalServerErrorException();
 				}
 			}else{
 				//bad request
-				throw new BadRequestException();
+				return Response.status(Response.Status.BAD_REQUEST).entity("New state is different from PARKED/IN_TRANSIT").build();
 			}
 		}
 		
-		public Position getVehicleCurrentPosition(UriInfo uriInfo,String plateId){
+		public Response deleteVehicle(String plateId){
+			if (db.deleteVehicle(plateId))
+				return Response.ok("Vehicle succesfully deleted").build();
+			else
+				return Response.status(Response.Status.NOT_FOUND).entity("Vehicle "+plateId+" is not in the system").build();
+		}
+		
+		public Response exitVehicleRequest(String plateId){
 			Vehicle v = db.getVehicle(plateId);
-			if (v == null)
-				return null; // vehicle not found
+			if (v == null){ // vehicle not found
+				return Response.status(Response.Status.NOT_FOUND).entity("Vehicle "+plateId+" is not in the system").build();
+			}else{
+				Place currentPlace = db.getPlace(v.getPosition().getPlaceId());
+				if (currentPlace.getGate() == null){
+					//current position is not a Gate
+					return Response.status(Response.Status.FORBIDDEN).entity("Current position is not an OUT/INOUT gate").build();
+				}else{
+					if (currentPlace.getGate().equals("OUT")||currentPlace.getGate().equals("INOUT")){
+						if (db.deleteVehicle(plateId)== true)
+							return Response.status(Response.Status.OK).entity("Vehicle "+plateId+" successfully exited the system").build();
+						else
+							throw new InternalServerErrorException();
+					}else{
+						//current position is not an INOUT or OUT gate
+						return Response.status(Response.Status.FORBIDDEN).entity("Current position is not an OUT/INOUT gate").build();
+					
+					}
+				}
+			}
+				
+		}
+		
+		public Response getVehicleCurrentPosition(UriInfo uriInfo,String plateId){
+			Vehicle v = db.getVehicle(plateId);
+			if (v == null) //vehicle not found
+				return Response.status(Response.Status.NOT_FOUND).entity("Vehicle "+plateId+" is not in the system").build();
 			Position position = new Position();
 			position.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()+"/currentPosition"));
 			position.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"+v.getPosition().getPlaceId()));
 			position.setPlaceId(v.getPosition().getPlaceId());
-			return position;
+			return Response.ok(position).build();
 		}
 		
-		public SuggestedPath changeCurrentPosition(UriInfo uriInfo,String plateId,Position newPosition){
+		public Response changeCurrentPosition(UriInfo uriInfo,String plateId,Position newPosition){
 			Vehicle vehicle = db.getVehicle(plateId);
 			if (vehicle != null){
 				Place newPlace = db.getPlace(newPosition.getPlaceId());
@@ -246,17 +324,18 @@ public class RnsService {
 					if (newPlace.getPlaceId().equals(vehicle.getPosition().getPlaceId())){
 						//new position is equal to current position -> nothing change
 						SuggestedPath sp = db.getSuggestedPathByPlateId(plateId);
-						return sp;
+						return Response.ok(sp).build();
 					}else{
 						// try to change position
 						SuggestedPath sp = db.getSuggestedPathByPlateId(plateId);
 						Position oldPosition = vehicle.getPosition();
 						if (checkIfInSuggestedPath(sp,oldPosition.getPlaceId(),newPosition.getPlaceId()) == true){
+							System.out.println("new position is in the suggested path");
 							//new pos is the next pos in the suggested path
 							if (db.changePositionWithoutSuggestedPath(plateId, newPosition)==true)
-								return sp;
+								return Response.ok(sp).build();
 							else
-								return null;//internal server error
+								throw new InternalServerErrorException();//internal server error
 						}else{
 							//new pos is not the next in suggested path
 							//check if the current position is connectedTo the new position
@@ -265,41 +344,49 @@ public class RnsService {
 								//look if exist a suggested path from the new position
 								//from= new position -> destination= vehicle destination
 								List<String> pathId = neo4jService.findShortestPath(newPosition.getPlaceId(),vehicle.getDestination());
-								if (pathId != null){
+								if (pathId != null&&(pathId.isEmpty()==false)){
 									SuggestedPath newSp = new SuggestedPath();
 									newSp = fillSuggestedPathInfo(uriInfo,vehicle,pathId);
 									if (db.changePositionWithSuggestedPath(newSp,plateId,newPosition)==true){
-										return newSp;
+										System.out.println("new suggested path calculated");
+										return Response.ok(newSp).build();
 									}else{
 										//internal server error : impossible update sp
 										throw new InternalServerErrorException();
 									}
 								}else{
-									//error : null path
-									
+									//error : null path -> impossible arrive to the destination from new current position
+									SuggestedPath newSp = new SuggestedPath();
+									newSp = fillSuggestedPathInfo(uriInfo,vehicle,null);
+									//empty suggested path
+									if (db.changePositionWithSuggestedPath(newSp,plateId,newPosition)==true){
+										return Response.ok(newSp).build();
+									}else{
+										//internal server error : impossible update sp
+										throw new InternalServerErrorException();
+									}
 								}
 							}else{
 								//error : the old place is not connected to the new place
-								throw new BadRequestException();
+								return Response.status(Response.Status.FORBIDDEN).entity("New position is unreachable from previous current position").build();
 							}
 						}
 						
 					}
 				}else{
 					//new position not found in the db
-					throw new BadRequestException();
+					return Response.status(Response.Status.BAD_REQUEST).entity("New position place is not in the system").build();
 				}
 			}else{
 				//vehicle not found
-				throw new NotFoundException();
+				return Response.status(Response.Status.NOT_FOUND).entity("Vehicle "+plateId+" is not in the system").build();
 			}
-			return null;
 		}
 		
 		//this method return true if the next place is the next on the suggested path,false otherwise
 		private boolean checkIfInSuggestedPath(SuggestedPath sp,String oldP,String newP){
 			String previous = null;
-			for (SuggestedPath.Path p : sp.getPath()){
+			for (Path p : sp.getPath()){
 				if (previous==null)
 					previous=p.getPalceId();
 				if ((oldP.equals(previous))&&(newP.equals(p.getPalceId()))){
@@ -314,8 +401,11 @@ public class RnsService {
 		
 		private boolean checkIfIsNextTo(String oldP,String newP){
 			Place oldPlace = db.getPlace(oldP);
-			if (oldPlace.getConnectedTo().getTo().contains(newP) == true)
-				return true;
+			List<To> toPlaces = oldPlace.getConnectedTo().getTo();
+			for (To toPlace : toPlaces){
+				if (toPlace.getPlaceId().equals(newP))
+					return true;
+			}
 			return false;			
 		}
 		
@@ -333,21 +423,6 @@ public class RnsService {
 			return vehicles;
 		}
 		
-		//Get the list of all parking areas in the system
-		public Places getParkingAreas(UriInfo uriInfo) {
-			Places places = new Places();
-			Collection<Place> parkingAreas = db.getParkingAreas();
-			if (parkingAreas != null){
-				for (Place p : parkingAreas){
-					Place place = new Place();
-					place = fillPlaceInfo(uriInfo,p);	
-					places.getPlace().add(place);
-				}
-				return places;
-			}else{
-				return null;
-			}
-		}
 		
 		//Get the list of the connections on the db filled with all URIs
 		public Connections getConnections(UriInfo uriInfo){
@@ -365,19 +440,23 @@ public class RnsService {
 		    	
 				connections.getConnection().add(connection);
 			}
-			if (connections == null)
-				return null;
+			if (connections == null){
+				//create an empty list of places with only the self element setted
+				Connections emptyConnections = new Connections();
+				emptyConnections.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/connections/"));
+				return emptyConnections;
+			}
 			return connections;
 			
 		}
 		
 		//Get a single place given the placeId, filled with all URIs
-		public Place getPlace(UriInfo uriInfo,String placeId) {
+		public Response getPlace(UriInfo uriInfo,String placeId) {
 			Place p = db.getPlace(placeId);
 			if (p == null)
-				return null;
+				return Response.status(Response.Status.NOT_FOUND).entity("Place "+placeId+" is not in the system").build();
 			Place place = fillPlaceInfo(uriInfo,p);		
-			return place;
+			return Response.ok(place).build();
 		}
 		
 		
@@ -411,18 +490,26 @@ public class RnsService {
 			position.setPlaceId(v.getOrigin());
 			position.setPlaceLink(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"+v.getOrigin()));
 			vehicle.setSuggestedPathLink(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()+"/suggestedPath"));
+			vehicle.setChangeStateLink(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()+"/state"));
+			vehicle.setDeleteVehicleLink(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()));
+			vehicle.setExitRequestLink(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()+"/exit"));
+			vehicle.setCurrentPositionLink(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()+"/currentPosition"));
 			return vehicle;
 		}
 		
 		private SuggestedPath fillSuggestedPathInfo(UriInfo uriInfo,Vehicle v,List<String> path){
 			SuggestedPath sp = new SuggestedPath();
-			
 			sp.setStartId(v.getOrigin());
 			sp.setEndId(v.getDestination());
 			sp.setVehicle(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()));
 			sp.setSelf(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()+"/suggestedPath"));
 			sp.setStart(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"+v.getOrigin()));
 			sp.setEnd(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/places/"+v.getDestination()));
+			sp.setCurrentPositionLink(myUriBuilder(uriInfo.getBaseUriBuilder(),"/rns/vehicles/"+v.getPlateId()+"/currentPosition"));
+			if (path == null){
+				//destination unreachable
+				return sp;
+			}
 			for (String place : path){
 				Path p = new Path();
 				p.setPalceId(place);

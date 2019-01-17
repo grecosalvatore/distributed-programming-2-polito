@@ -11,30 +11,37 @@ import it.polito.dp2.RNS.lab3.VehClient;
 import it.polito.dp2.RNS.lab3.WrongPlaceException;
 
 public class MyVehClient implements VehClient{
-
+	//private VehServiceManager service = VehServiceManager.getVehServiceManager(); 
+	private VehServiceManager service;
+	
+	public MyVehClient(){
+		 service = new VehServiceManager();
+	}
+	
 	@Override
 	public List<String> enter(String plateId, VehicleType type, String inGate, String destination)
 			throws ServiceException, UnknownPlaceException, WrongPlaceException, EntranceRefusedException {
 		// TODO Auto-generated method stub
-		return null;
+		return service.enterRequest(plateId, type, inGate, destination);
 	}
 
 	@Override
 	public List<String> move(String newPlace) throws ServiceException, UnknownPlaceException, WrongPlaceException {
 		// TODO Auto-generated method stub
-		return null;
+		return service.moveRequest(newPlace);
 	}
 
 	@Override
 	public void changeState(VehicleState newState) throws ServiceException {
 		// TODO Auto-generated method stub
+		service.changeStateRequest(newState);
 		
 	}
 
 	@Override
 	public void exit(String outGate) throws ServiceException, UnknownPlaceException, WrongPlaceException {
 		// TODO Auto-generated method stub
-		
+		service.exitRequest(outGate);
 	}
 
 }

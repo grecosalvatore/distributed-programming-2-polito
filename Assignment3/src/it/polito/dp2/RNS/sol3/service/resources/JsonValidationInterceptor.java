@@ -47,7 +47,7 @@ public class JsonValidationInterceptor implements ReaderInterceptor {
 				logger.log(Level.SEVERE, "xml schema file Not found.");
 				throw new IOException();
 			}
-	    	jc = JAXBContext.newInstance("it.polito.dp2.RNS.sol3.jaxb");
+	    	jc = JAXBContext.newInstance("it.polito.dp2.RNS.sol3.jaxb.rnsSystem");
 	    	SchemaFactory sf = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI);
 	    	//sf.setErrorHandler(new MyErrorHandler());
 	    	schema = sf.newSchema(new StreamSource(schemaStream));
